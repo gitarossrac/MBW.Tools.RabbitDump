@@ -46,6 +46,9 @@ namespace MBW.Tools.RabbitDump.Options
         [Option("-o|--output", Description = "Example: amqp://user:password@host:port/vhost")]
         public string Output { get; set; }
 
+        [Option("-b|--base64-decode-rebus-headers")]
+        public bool Base64DecodeRebusHeaders { get; set; }
+
         [Option("--output-type", Description = "Overrides auto detection of output type")]
         public OutputType OutputType
         {
@@ -115,6 +118,9 @@ namespace MBW.Tools.RabbitDump.Options
         [Option("--count", Description = "Limit the transfer to a number of items")]
         [Range(1, int.MaxValue)]
         public int? MessageLimit { get; set; }
+
+        [Option("--with-debugger")]
+        public bool WithDebugger { get; set; }
 
         // ReSharper disable once UnusedMember.Global
         public ValidationResult OnValidate()

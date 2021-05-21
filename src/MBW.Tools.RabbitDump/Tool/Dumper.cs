@@ -1,6 +1,10 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Text;
 using System.Threading.Tasks.Dataflow;
 using MBW.Tools.RabbitDump.Movers;
+using MBW.Tools.RabbitDump.Options;
 using MBW.Tools.RabbitDump.Utilities;
 using Microsoft.Extensions.Logging;
 
@@ -12,17 +16,24 @@ namespace MBW.Tools.RabbitDump.Tool
         private readonly IDestination _destination;
         private readonly ConsoleLifetime _hostLifetime;
         private readonly ILogger<Dumper> _logger;
+        private readonly ArgumentsModel _model;
 
-        public Dumper(ISource source, IDestination destination, ConsoleLifetime hostLifetime, ILogger<Dumper> logger)
+        public Dumper(ISource source, IDestination destination, ConsoleLifetime hostLifetime, ILogger<Dumper> logger, ArgumentsModel model)
         {
             _source = source;
             _destination = destination;
             _hostLifetime = hostLifetime;
             _logger = logger;
+            _model = model;
         }
 
         public DumperExitCode Run()
         {
+            if (_model.WithDebugger)
+            {
+                Debugger.Launch();
+            }
+
             int count = 0;
 
             _logger.LogDebug("Begin moving data, with {Source} => {Destination}", _source, _destination);
@@ -43,6 +54,12 @@ namespace MBW.Tools.RabbitDump.Tool
                     count++;
                     if (count % 1000 == 0)
                         _logger.LogDebug("Sent {Count} messages to destination", count);
+
+                    if (_model.Base64DecodeRebusHeaders)
+                    {
+                        Base64DecodeRebusHeaders(ref item);
+                    }
+
                     return item;
                 });
 
@@ -84,6 +101,27 @@ namespace MBW.Tools.RabbitDump.Tool
             _logger.LogInformation("Copied {Count} messages from source to destination", count);
 
             return DumperExitCode.Ok;
+        }
+
+        private void Base64DecodeRebusHeaders(ref MessageItem item)
+        {
+            foreach (var p in item.Properties)
+            {
+                if (!p.Key.StartsWith("rbs2")) continue;
+
+                if (_model.InputType == InputType.Amqp && p.Value is byte[] bytes)
+                {
+                    item.Properties[p.Key] = Encoding.UTF8.GetString(bytes);
+                }
+                else
+                {
+                    var value = p.Value.ToString();
+                    if (value != null)
+                    {
+                        item.Properties[p.Key] = Encoding.UTF8.GetString(Convert.FromBase64String(value));
+                    }
+                }
+            }
         }
     }
 }

@@ -15,7 +15,8 @@ namespace MBW.Tools.RabbitDump.Utilities
             Serializer = JsonSerializer.Create(new JsonSerializerSettings
             {
                 NullValueHandling = NullValueHandling.Ignore,
-                DefaultValueHandling = DefaultValueHandling.Ignore
+                DefaultValueHandling = DefaultValueHandling.Ignore,
+                DateParseHandling = DateParseHandling.None
             });
 
             Encoding = new UTF8Encoding(false);
